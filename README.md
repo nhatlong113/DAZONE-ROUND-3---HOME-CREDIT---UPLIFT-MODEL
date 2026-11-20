@@ -1,8 +1,8 @@
 # DAZONE 2026 Round 3.1 - Home Credit Uplift Modeling
 
-Bài toán: với từng khách hàng, nên truyền thông Cash Loan hay Credit Card trước để tối đa hóa chuyển đổi của toàn danh mục.
+Repo này là bài làm của nhóm cho vòng 3.1 cuộc thi DAZONE 2026, đề bài do Home Credit đưa ra. Câu hỏi chính khá đơn giản: với mỗi khách hàng, nên chào Cash Loan hay Credit Card trước thì toàn danh mục sẽ chuyển đổi tốt hơn?
 
-Mô hình cuối là ensemble 3 cấu hình UPLIFT_RF_CIT và 2 cấu hình INT_RF, đạt Qini_total trung bình 5-fold là 0.094930 (fold tốt nhất 0.132108).
+Sau khá nhiều lần thử, nhóm chốt mô hình cuối là ensemble của 3 cấu hình UPLIFT_RF_CIT và 2 cấu hình INT_RF. Trên 5-fold CV, Qini_total trung bình đạt 0.094930, fold tốt nhất đạt 0.132108.
 
 ## 1. Bài toán
 
@@ -16,15 +16,13 @@ Mô hình cuối là ensemble 3 cấu hình UPLIFT_RF_CIT và 2 cấu hình INT_
 
 ### Qini Coefficient
 
-Sắp xếp khách hàng theo uplift dự đoán giảm dần. Tại tỷ lệ dân số $\phi = k/N$:
+Nhóm xếp khách hàng theo uplift dự đoán từ cao xuống thấp, rồi tại mỗi tỷ lệ dân số $\phi = k/N$ tính:
 
 $$Q(\phi) = \frac{\sum_{i \le k} y_i\, w_i}{N_{treatment}} - \frac{\sum_{i \le k} y_i\,(1-w_i)}{N_{control}}$$
 
 $$AUC_{random} = \frac{Q(1)}{2}, \qquad \text{Qini}_{coef} = \frac{AUC_{model} - AUC_{random}}{AUC_{perfect} - AUC_{random}}$$
 
-- AUC tính bằng tích phân hình thang trên đường cong `(φ, Q(φ))`.
-- `AUC_perfect` là đường Qini của oracle score `w·y - (1-w)·y`.
-- Với target cash, `w = 1` khi treatment là Cash. Với target card, `w = 1` khi treatment là Card.
+AUC được tính bằng tích phân hình thang trên đường `(φ, Q(φ))`. `AUC_perfect` lấy từ trường hợp lý tưởng, khi điểm số chính là `w·y - (1-w)·y`. Với target cash thì `w = 1` khi khách nhận treatment Cash, còn với target card thì `w = 1` khi khách nhận treatment Card. Đề bài chỉ định nghĩa Qini là `AUC_model - AUC_random`, nhóm chia thêm cho phần của mô hình lý tưởng để điểm của cash và card cùng thang đo trước khi cộng lại.
 
 ## 2. Dữ liệu
 
@@ -52,7 +50,7 @@ Tỷ lệ chuyển đổi theo treatment (%):
 | Card Treatment | 5.50 | 2.84 |
 | Chênh lệch (ATE) | +0.76 pp | +0.24 pp |
 
-Uplift trung bình rất nhỏ so với base rate, nên mục tiêu là xếp hạng đúng những khách hàng phản ứng với từng chiến lược chứ không phải dự đoán xác suất chuyển đổi chung.
+Có thể thấy chiến lược Cash chỉ làm tỷ lệ ký Cash tăng thêm khoảng 0.76 điểm %, còn chiến lược Card làm tỷ lệ mở thẻ tăng khoảng 0.24 điểm %. Mức chênh này nhỏ so với tỷ lệ nền, nên cái nhóm cần không phải là đoán ai sẽ chuyển đổi, mà là tìm ra ai thật sự bị tác động bởi từng kiểu truyền thông.
 
 ## 3. Pipeline
 
@@ -79,7 +77,7 @@ flowchart LR
 
 ## 4. Data Preprocessing
 
-Bỏ `customer_id` và 6 cột thiếu trên 50%:
+Đầu tiên nhóm bỏ `customer_id` và 6 cột bị thiếu hơn một nửa dữ liệu:
 
 | Cột | Missing |
 |---|---:|
@@ -90,7 +88,7 @@ Bỏ `customer_id` và 6 cột thiếu trên 50%:
 | `max_cntr_len_fi_12m` | 74.07% |
 | `f_appointment_3m` | 55.70% |
 
-Các transformer được fit trên train rồi dùng lại cho test:
+Các cột còn lại được chia theo kiểu dữ liệu để xử lý. Mọi bước đều fit trên tập train, sau đó dùng lại y nguyên cho tập test:
 
 | Nhóm | Số cột | Xử lý |
 |---|---:|---|
@@ -99,11 +97,11 @@ Các transformer được fit trên train rồi dùng lại cho test:
 | Nominal | 7 | `SimpleImputer(most_frequent)`, `OneHotEncoder(drop="first")`, ra 35 cột (gồm `treatment_cash`) |
 | Ordinal `cli_education` | 1 | `SimpleImputer(most_frequent)`, `OrdinalEncoder` theo thứ tự ELEMENTARY_SCHOOL, PTCS, PTTH, BACHELORS, MASTERS, `MinMaxScaler` |
 
-Kết quả: `df_feature` có 136,992 dòng, 63 cột (62 feature trong khoảng [0, 1] và `treatment_cash`); `df_target` gồm `cash_sign_30d`, `card_sign_30d`.
+Sau bước này, `df_feature` có 136,992 dòng và 63 cột (62 feature đã đưa về khoảng [0, 1] cùng cột `treatment_cash`), `df_target` gồm hai cột `cash_sign_30d` và `card_sign_30d`.
 
 ## 5. Visualization và Business Insight
 
-`cash_minus_card` là tỷ lệ ký Cash ở nhóm Cash Treatment trừ tỷ lệ mở Card ở nhóm Card Treatment, đơn vị điểm %.
+Phần này nhóm so sánh tỷ lệ ký Cash của khách nhận chiến lược Cash với tỷ lệ mở thẻ của khách nhận chiến lược Card, trong từng nhóm khách hàng. Cột `cash_minus_card` là hiệu của hai tỷ lệ đó, tính theo điểm %.
 
 <img src="results/figures/eda_treatment_cross_conversion.png" width="85%">
 
@@ -121,7 +119,7 @@ Kết quả: `df_feature` có 136,992 dòng, 63 cột (62 feature trong khoảng
 
 <img src="results/figures/eda_risk_group.png" width="49%"> <img src="results/figures/eda_payment_decile.png" width="49%">
 
-Các nhóm `risk_grp` F, G, H, I chỉ có 69, 13, 5, 4 khách nên tỷ lệ ở các nhóm này không đáng tin.
+Lưu ý là các nhóm rủi ro F, G, H, I chỉ có lần lượt 69, 13, 5 và 4 khách, nên nhóm không rút ra kết luận gì từ các nhóm này.
 
 ## 6. Feature Interaction
 
@@ -136,7 +134,7 @@ Các nhóm `risk_grp` F, G, H, I chỉ có 69, 13, 5, 4 khách nên tỷ lệ �
 
 ### 6.2 Tương tác giữa feature và treatment
 
-Vì treatment được phân bổ ngẫu nhiên nên uplift của từng phân khúc có thể ước lượng bằng chênh lệch tỷ lệ giữa hai nhóm. Mức tương tác của một feature được đo bằng độ lệch chuẩn có trọng số của uplift giữa các bin, chỉ giữ bin có từ 200 khách mỗi nhóm trở lên.
+Do khách được chia ngẫu nhiên vào hai chiến lược, nhóm có thể ước lượng uplift của từng phân khúc bằng cách lấy tỷ lệ của nhóm nhận chiến lược trừ đi tỷ lệ của nhóm còn lại. Để xem feature nào làm uplift thay đổi nhiều, nhóm chia mỗi feature thành các bin rồi tính độ lệch chuẩn có trọng số của uplift giữa các bin. Những bin có dưới 200 khách ở một trong hai nhóm bị loại để tránh nhiễu.
 
 <img src="results/figures/interaction_feature_treatment.png" width="70%">
 
@@ -150,7 +148,7 @@ Vì treatment được phân bổ ngẫu nhiên nên uplift của từng phân k
 | `cnt_total_payment` D9 / D10 | +2.79 / +3.39 | +0.35 / +0.85 |
 | `cnt_total_payment` D1 đến D6 | -0.22 đến +0.38 | -0.12 đến +0.28 |
 
-Uplift của chiến lược Cash tập trung ở khách vừa nộp hồ sơ gần đây, rủi ro thấp (A, B) và thanh toán nhiều. Với nhóm rủi ro E hoặc đã lâu không nộp hồ sơ, truyền thông Cash gần như không tạo thêm chuyển đổi. `cnt_month_from_last_appl` cũng là feature quan trọng nhất của mô hình (mục 8).
+Nhìn chung, chiến lược Cash có tác dụng rõ nhất với những khách vừa nộp hồ sơ gần đây, thuộc nhóm rủi ro thấp (A, B) và có nhiều lần thanh toán. Ngược lại, với khách rủi ro E hoặc đã lâu không nộp hồ sơ, chào Cash gần như không làm tăng thêm chuyển đổi. Kết quả này khớp với phần feature importance ở mục 8, nơi `cnt_month_from_last_appl` cũng đứng đầu.
 
 <img src="results/figures/interaction_risk_age.png" width="95%">
 
@@ -166,7 +164,7 @@ $$X_{aug} = [\,X,\; W,\; X \cdot W\,] \in \mathbb{R}^{n \times 125}, \qquad \tex
 |---|---|---|---|
 | T, S, INT, CT, TO, X, R, DR | dt, rf, extratrees, adaboost, lgbm, xgb, cat, hgb, logistic, knn, fuzzy_knn, svm, mlp, kan, deep_kan | UPLIFT_TREE_{KL, ED, CHI, CTS, DDP}, INTERACTION_TREE, CAUSAL_INFERENCE_TREE | UPLIFT_RF_{KL, ED, CHI, CTS, DDP, IT, CIT}, UTBOOST |
 
-Top 10 theo Qini_total (lấy từ Bảng 6 trong `docs/report.pdf`):
+Nhóm chạy thử rất nhiều tổ hợp meta-learner, base model và các mô hình uplift trực tiếp, mỗi tổ hợp đánh giá bằng K-fold. Dưới đây là 10 tổ hợp tốt nhất (trích từ Bảng 6 trong `docs/report.pdf`):
 
 | # | Model | Qini cash | Qini card | Qini total |
 |---:|---|---:|---:|---:|
@@ -181,11 +179,11 @@ Top 10 theo Qini_total (lấy từ Bảng 6 trong `docs/report.pdf`):
 | 9 | TO_LOGISTIC | +0.04885 | +0.02201 | +0.07086 |
 | 10 | UPLIFT_RF_KL | +0.05637 | +0.01311 | +0.06948 |
 
-Hai model được tối ưu tiếp là INT_RF (Interaction S-Learner với Random Forest) và UPLIFT_RF_CIT (CausalML Uplift Random Forest, `evaluationFunction="CIT"`).
+Hai mô hình đứng đầu là INT_RF (S-Learner có thêm tương tác feature với treatment, dùng Random Forest) và UPLIFT_RF_CIT (Uplift Random Forest của CausalML với tiêu chí CIT). Nhóm tập trung tối ưu tiếp hai mô hình này.
 
 ### 7.2 Random Search
 
-Điểm là Qini OOF 5-fold, mỗi target dùng bộ fold riêng. Dấu `*` là cấu hình được chọn vào ensemble.
+Mỗi cấu hình được đánh giá bằng Qini trên dự đoán out-of-fold của 5-fold, cash và card dùng bộ fold riêng. Các cấu hình có dấu `*` là những cấu hình nhóm đưa vào ensemble.
 
 UPLIFT_RF_CIT, 30 cấu hình:
 
@@ -207,15 +205,13 @@ INT_RF, 40 cấu hình:
 | RS_027 * | 560 | 6 | 80 | 50 | log2 | entropy | balanced | 0.091053 |
 | RS_028 * | 420 | 6 | 30 | 2 | log2 | gini | balanced | 0.090592 |
 
-- Kết quả đầy đủ (cash, card, tham số, từng fold) nằm trong `results/random_search_uplift_rf_cit.csv`, `results/random_search_int_rf.csv` và các file `*_folds.csv`.
-- Ba cấu hình UPLIFT_RF_CIT được chọn có `qini_card` dương ở cả 5 fold, còn CFG019 bị âm ở fold 5 (-0.00107).
-- CFG012 (`max_depth=None`) bị lỗi khi train nên không có điểm.
+Kết quả đầy đủ của từng cấu hình và từng fold nằm trong `results/random_search_uplift_rf_cit.csv`, `results/random_search_int_rf.csv` và các file `*_folds.csv` đi kèm. Với UPLIFT_RF_CIT, nhóm bỏ qua CFG019 dù điểm cao thứ hai vì `qini_card` ở fold 5 bị âm (-0.00107), trong khi ba cấu hình được chọn đều dương ở cả 5 fold. Riêng CFG012 (`max_depth=None`) bị lỗi lúc train nên không có điểm.
 
 ### 7.3 Model cuối: Ensemble 3 UPLIFT_RF_CIT + 2 INT_RF
 
 $$\text{uplift}_{ensemble}(x) = \frac{1}{5}\sum_{m=1}^{5}\text{uplift}_m(x)$$
 
-Tính riêng cho cash và card. Đánh giá bằng `StratifiedKFold(5, shuffle=True, random_state=42)`, stratify theo `treatment_cash`, `cash_sign_30d`, `card_sign_30d`:
+Thay vì chọn một mô hình duy nhất, nhóm lấy trung bình uplift của 5 mô hình (làm riêng cho cash và card) để kết quả ổn định hơn. Ensemble được đánh giá bằng `StratifiedKFold(5, shuffle=True, random_state=42)`, chia theo tổ hợp `treatment_cash`, `cash_sign_30d`, `card_sign_30d`:
 
 | Fold | Qini cash | Qini card | Qini total |
 |---|---:|---:|---:|
@@ -230,7 +226,7 @@ Qini curve của fold 1:
 
 <img src="results/figures/qini_curve_cash_ensemble_best_fold.png" width="49%"> <img src="results/figures/qini_curve_card_ensemble_best_fold.png" width="49%">
 
-Qini trên chính tập train sau khi fit toàn bộ (in-sample, không dùng để so sánh model):
+Bảng dưới là Qini tính trên chính tập train sau khi fit lại trên toàn bộ dữ liệu. Vì là điểm in-sample nên số khá cao, nhóm chỉ để tham khảo chứ không dùng để so sánh mô hình:
 
 | Model | Qini cash | Qini card | Qini total |
 |---|---:|---:|---:|
@@ -243,17 +239,13 @@ Qini trên chính tập train sau khi fit toàn bộ (in-sample, không dùng đ
 
 ### 7.4 Inference
 
-- Fit lại 5 model trên toàn bộ 136,992 dòng train và dự đoán 34,080 dòng test.
-- Xác suất của UPLIFT_RF_CIT là `clip(control_rate + uplift, 0, 1)`, của INT_RF là `P(y=1 | x, W=event)`.
-- Khuyến nghị Cash nếu `uplift_cash_score - uplift_card_score ≥ 0`, ngược lại là Card.
-- File đã nộp: `results/final_submission/submission.csv` (xác suất của 5 base model).
+Khi dự đoán cho tập test, nhóm fit lại cả 5 mô hình trên toàn bộ 136,992 dòng train. Xác suất của UPLIFT_RF_CIT được tính bằng tỷ lệ nền của nhóm control cộng với uplift (cắt về khoảng [0, 1]), còn INT_RF cho ra xác suất trực tiếp khi gán khách vào chiến lược tương ứng. Khách nào có `uplift_cash_score - uplift_card_score ≥ 0` thì nên chào Cash trước, còn lại chào Card. File nhóm đã nộp là `results/final_submission/submission.csv`.
 
 ## 8. Feature Importance
 
 $$FI^{(k)}_j = \frac{1}{5}\sum_{m=1}^{5} FI^{(k)}_{j,m}, \quad k \in \{lime, shap, permutation\} \qquad FI^{final}_j = \frac{FI^{(lime)}_j + FI^{(shap)}_j + FI^{(permutation)}_j}{3}$$
 
-- LIME và SHAP (KernelExplainer): trung bình trị tuyệt đối đóng góp vào uplift score, lấy trung bình giữa cash và card.
-- Permutation: mức giảm `Qini_cash + Qini_card` khi hoán vị feature, tính trên 800 dòng train, lặp 3 lần.
+Nhóm dùng ba cách đo cho từng mô hình: LIME và SHAP (KernelExplainer) đo mức đóng góp của feature vào uplift score, còn permutation đo xem Qini_cash + Qini_card giảm bao nhiêu khi xáo trộn feature đó (trên 800 dòng train, lặp 3 lần). Mỗi cách được lấy trung bình qua 5 mô hình, sau đó lấy trung bình ba cách để ra điểm cuối.
 
 <img src="results/figures/feature_importance_top15.png" width="75%">
 
@@ -270,11 +262,11 @@ $$FI^{(k)}_j = \frac{1}{5}\sum_{m=1}^{5} FI^{(k)}_{j,m}, \quad k \in \{lime, sha
 | 9 | `cli_marital_status_Married` | 0.000000 | 0.000108 | 0.015802 | 0.005303 |
 | 10 | `risk_grp_C` | 0.000584 | 0.000161 | 0.012952 | 0.004566 |
 
-Permutation (đơn vị Qini) lớn hơn nhiều so với LIME và SHAP (đơn vị uplift) nên chiếm phần lớn trong FI final. Bảng đầy đủ 62 feature và từng model nằm trong `results/final_submission/feature_importance/`.
+Cần lưu ý là permutation tính theo Qini nên có giá trị lớn hơn hẳn LIME và SHAP, vì vậy thứ hạng cuối cùng chủ yếu do permutation quyết định. Bảng đầy đủ cho 62 feature và cho từng mô hình nằm trong `results/final_submission/feature_importance/`.
 
 ## 9. Thử nghiệm khác
 
-Các hướng dưới đây được thử trên INT_RF và UPLIFT_RF_CIT với cấu hình baseline nhưng không dùng trong model cuối. Điểm là Qini OOF 5-fold.
+Trong quá trình làm, nhóm có đọc và thử áp dụng một số paper lên INT_RF và UPLIFT_RF_CIT (dùng cấu hình mặc định ban đầu). Kết quả không tốt hơn rõ ràng nên không được đưa vào mô hình cuối, nhưng nhóm vẫn để lại đây để tham khảo:
 
 | Paper | Model | Qini cash | Qini card | Qini total |
 |---|---|---:|---:|---:|
@@ -289,7 +281,7 @@ Các hướng dưới đây được thử trên INT_RF và UPLIFT_RF_CIT với 
 | Class Flipping | CLASS_FLIP_UPLIFT_RF_CIT | 0.042424 | 0.013428 | 0.055852 |
 | RUAD | RUAD_SNN | 0.034764 | 0.016639 | 0.051403 |
 
-Notebook Chi filter chưa chạy xong nhánh UPLIFT_RF_CIT (dừng ở fold 2). Các notebook trong `experiments/model_variations/` (Spline KAN, Deep KAN, TabNet, Multi-head PTONet, grid ML/CausalML/UTBoost) không lưu output.
+Notebook Chi filter mới chạy xong phần INT_RF, phần UPLIFT_RF_CIT dừng ở fold 2 nên chưa có điểm. Ngoài ra nhóm còn thử Spline KAN, Deep KAN, TabNet và mạng nhiều đầu ra theo hướng PTONet, code nằm trong `experiments/model_variations/` nhưng các notebook này không lưu lại output.
 
 ## 10. Cấu trúc thư mục
 
@@ -328,4 +320,4 @@ pip install -r requirements.txt
 jupyter notebook notebooks/
 ```
 
-Chạy lần lượt từ 01 đến 07. Notebook 04 mất khoảng 650 phút (UPLIFT_RF_CIT) và 576 phút (INT_RF) trên Kaggle CPU 4 core, các notebook 05 đến 07 cũng khá lâu. Kết quả đã có sẵn trong `results/`, lấy từ log chạy trên Kaggle (`archive/original_notebooks/`). Chạy lại với phiên bản `scikit-learn` hoặc `causalml` khác có thể lệch nhẹ ở chữ số thập phân thứ 3.
+Các notebook chạy theo thứ tự từ 01 đến 07. Notebook 04 khá nặng: trên Kaggle (CPU 4 nhân) nhóm mất khoảng 650 phút cho UPLIFT_RF_CIT và 576 phút cho INT_RF, các notebook 05 đến 07 cũng mất khá lâu. Nếu chỉ muốn xem kết quả thì có thể mở thẳng thư mục `results/`, số liệu ở đó lấy từ các lần chạy trên Kaggle (notebook gốc để trong `archive/original_notebooks/`). Nếu chạy lại với phiên bản `scikit-learn` hoặc `causalml` khác, điểm có thể lệch nhẹ ở chữ số thập phân thứ ba.
