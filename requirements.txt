@@ -1,0 +1,10 @@
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn
+joblib
+causalml==0.16.0
+shap
+lime
+jupyter

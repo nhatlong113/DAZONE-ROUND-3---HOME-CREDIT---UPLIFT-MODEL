@@ -1,0 +1,11 @@
+experiment,paper,notebook,model,qini_cash,qini_card,qini_total,note
+CAFE,CAFE: Causally-Guided Automated Feature Engineering with Multi-Agent Reinforcement Learning,experiments/paper_integration/cafe-int-rf_uplift-rf-cit.ipynb,INT_RF,0.054236,0.039909,0.094145,baseline config (INT_RF_RS_001)
+CAFE,CAFE: Causally-Guided Automated Feature Engineering with Multi-Agent Reinforcement Learning,experiments/paper_integration/cafe-int-rf_uplift-rf-cit.ipynb,CAFE_UPLIFT_RF_CIT,0.057509,0.034297,0.091806,
+CAFE,CAFE: Causally-Guided Automated Feature Engineering with Multi-Agent Reinforcement Learning,experiments/paper_integration/cafe-int-rf_uplift-rf-cit.ipynb,UPLIFT_RF_CIT,0.057206,0.032514,0.089720,baseline config (CFG001)
+CAFE,CAFE: Causally-Guided Automated Feature Engineering with Multi-Agent Reinforcement Learning,experiments/paper_integration/cafe-int-rf_uplift-rf-cit.ipynb,CAFE_INT_RF,0.055961,0.032946,0.088907,
+Chi filter feature selection,Feature Selection Methods for Uplift Modeling and Heterogeneous Treatment Effect (Zhao et al.),experiments/paper_integration/cate-int-rf_uplift-rf-cit.ipynb,CHI_FS_INT_RF,0.058476,0.039081,0.097557,UPLIFT_RF_CIT branch stopped at fold 2 (no final score)
+Class flipping,Class flipping for uplift modeling and HTE estimation on imbalanced RCT data,experiments/paper_integration/class-flipping-int-rf_uplift-rf-cit.ipynb,CLASS_FLIP_INT_RF,0.051609,0.012721,0.064329,
+Class flipping,Class flipping for uplift modeling and HTE estimation on imbalanced RCT data,experiments/paper_integration/class-flipping-int-rf_uplift-rf-cit.ipynb,CLASS_FLIP_UPLIFT_RF_CIT,0.042424,0.013428,0.055852,
+EFIN,Explicit Feature Interaction-aware Uplift Network for Online Marketing,experiments/paper_integration/efin-int-rf_uplift-rf-cit.ipynb,EFIN_UPLIFT_RF_CIT,0.055012,0.029427,0.084439,
+EFIN,Explicit Feature Interaction-aware Uplift Network for Online Marketing,experiments/paper_integration/efin-int-rf_uplift-rf-cit.ipynb,EFIN_INT_RF,0.024991,0.019882,0.044873,
+RUAD,Robustness-enhanced Uplift Modeling with Adversarial Feature Desensitization,experiments/paper_integration/ruad-int-rf_uplift-rf-cit.ipynb,RUAD_SNN,0.034764,0.016639,0.051403,
