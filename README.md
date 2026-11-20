@@ -1,4 +1,4 @@
-# DAZONE 2026 Round 3.1 - Home Credit Uplift Modeling
+# DAZONE 2026 Round 3.1 - Home Credit Uplift Modelling
 
 Mã nguồn và kết quả của nhóm ở vòng 3.1 DAZONE 2026, với bài toán do Home Credit đưa ra: nên ưu tiên giới thiệu Cash Loan hay Credit Card cho từng khách hàng? Mục tiêu là chọn chiến lược truyền thông dựa trên tác động tăng thêm đến khả năng chuyển đổi, thay vì chỉ dự đoán khách hàng nào có khả năng đăng ký sản phẩm.
 
