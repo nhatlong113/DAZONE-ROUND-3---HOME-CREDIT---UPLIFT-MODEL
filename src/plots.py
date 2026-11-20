@@ -64,7 +64,7 @@ def importance_bar(fi, top=15, save=None):
     fig, ax = plt.subplots(figsize=(10, 7))
     ax.barh(top_fi["feature"], top_fi["feature_importance"], color="#4C78A8")
     ax.set_xlabel("feature_importance = mean(LIME, SHAP, Permutation)")
-    ax.set_title(f"Top {top} Feature Importance — Ensemble 5 models")
+    ax.set_title(f"Top {top} Feature Importance (ensemble 5 models)")
     fig.tight_layout()
     if save:
         fig.savefig(save, dpi=150, bbox_inches="tight")
